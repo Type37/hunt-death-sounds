@@ -10,11 +10,11 @@
 html { font: clamp(30px, 9vw, 48px) "Ivy Text", serif; }
 body { margin: 0; padding: 16px; box-sizing: border-box; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.4em; }
 .row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.25em; max-width: 100%; }
-button, input, label { font: inherit; }
+button, input, label, select { font: inherit; }
 .opt { font-size: clamp(17px, 4.6vw, 24px); }
 .ui { font-size: clamp(15px, 4vw, 22px); }
 .chips button[aria-pressed="true"] { outline: 2px solid; }
-.chips.off button { opacity: 0.35; }
+.chips.off button, select.off { opacity: 0.35; }
 input[type=checkbox] { width: 1em; height: 1em; }
 #adv { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.35); }
 #adv.open { display: flex; }
@@ -31,7 +31,7 @@ button { touch-action: manipulation; }
 </div>
 <div class="row opt">
 <label><input type="checkbox" id="useGround" checked> ground</label>
-<span class="row chips" id="ground"></span>
+<select id="ground"></select>
 </div>
 <div class="row opt">
 <label><input type="checkbox" id="useClothes" checked> clothes</label>
@@ -105,7 +105,10 @@ function chips(id, values, initial) {
   }
 }
 const short = n => String(Number(n.slice(-2)));
-chips("ground", Object.keys(grounds), "wood");
+const gsel = document.getElementById("ground");
+for (const g of ["random", ...Object.keys(grounds)]) gsel.add(new Option(g, g));
+gsel.value = "wood"; state.ground = "wood";
+gsel.onchange = () => { state.ground = gsel.value; };
 chips("rustle", ["light", "medium", "heavy"], "light");
 chips("screamM", voice.m.scream.map(short), "random");
 chips("exhaleM", voice.m.exhale.map(short), "random");
