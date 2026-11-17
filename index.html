@@ -60,7 +60,7 @@ button { touch-action: manipulation; }
 <div class="row"><span class="label">voice</span><input type="range" id="volVoice" min="0" max="200" value="100"><span id="volVoiceOut">100%</span></div>
 <div class="row"><span class="label">gear</span><input type="range" id="volClothes" min="0" max="200" value="100"><span id="volClothesOut">100%</span></div>
 <div class="row"><span class="label">ground</span><input type="range" id="volGround" min="0" max="200" value="100"><span id="volGroundOut">100%</span></div>
-<div class="row"><label><input type="checkbox" id="useMenu"> menu sfx</label><label><input type="checkbox" id="headshot"> headshot</label></div>
+<div class="row"><label><input type="checkbox" id="useMenu"> <span id="menuName">teammate death sfx</span></label><label><input type="checkbox" id="headshot"> headshot</label></div>
 <div class="row"><button id="advClose">close</button></div>
 </div></div>
 <script>
@@ -172,7 +172,7 @@ const TIPS = {
   volVoice: "100% is the game's mix: scream 0 dB, exhale -9 dB (-6 dB female).",
   volClothes: "100% is the game's mix.",
   volGround: "100% is the game's mix.",
-  useMenu: "The HUD sound: YOU DIED for you, TEAMMATE DIED for them (-2 dB). In the game an enemy death has no HUD sound.",
+  useMenu: "The HUD sound the game plays (-2 dB). An enemy death has no HUD sound in the game.",
   headshot: "No scream. In the game a headshot only cuts the voice off."
 };
 function applyTips() {
@@ -190,6 +190,11 @@ function applyTips() {
   }
 }
 applyTips();
+// the HUD checkbox names the sound for the chosen person
+const menuName = document.getElementById("menuName");
+const syncMenu = () => { menuName.textContent = state.actor === "you" ? "you died sfx" : "teammate death sfx"; };
+document.querySelectorAll("#actor button").forEach(b => b.addEventListener("click", syncMenu));
+syncMenu();
 const ctx = new AudioContext();
 const cache = {};
 const load = path => cache[path] ??= fetch(encodeURI(path) + ".wav").then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b));
