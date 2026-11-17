@@ -16,6 +16,7 @@ button, input, label, select { font: inherit; }
 .chips button[aria-pressed="true"] { outline: 2px solid; }
 .chips.off button { opacity: 0.35; }
 input[type=checkbox] { width: 1em; height: 1em; }
+input[type=range] { width: min(12em, 60vw); }
 .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.35); }
 .overlay.open { display: flex; }
 .overlay > div { background: Canvas; color: CanvasText; padding: 0.8em; display: flex; flex-direction: column; gap: 0.5em; font-size: clamp(16px, 4.4vw, 22px); max-width: calc(100vw - 32px); max-height: calc(100svh - 32px); overflow: auto; box-sizing: border-box; }
@@ -47,6 +48,7 @@ button { touch-action: manipulation; }
 <button data-ui="ui_hud_player_dead_loop">STARE AT DEATH</button>
 <button data-ui="ui_menu_hunter_dead">THAT HUNTER IS GONE</button>
 </div>
+<div class="row ui"><a href="https://store.steampowered.com/app/594650/" target="_blank" rel="noopener" style="text-decoration:none">🤠</a></div>
 <div id="moreGround" class="overlay"><div><div class="row chips" id="groundMore"></div></div></div>
 <div id="adv" class="overlay"><div>
 <div class="row"><span class="label">scream ♂️</span><span class="row chips" id="screamM"></span></div>
@@ -54,6 +56,9 @@ button { touch-action: manipulation; }
 <div class="row"><span class="label">scream ♀️</span><span class="row chips" id="screamF"></span></div>
 <div class="row"><span class="label">exhale ♀️</span><span class="row chips" id="exhaleF"></span></div>
 <div class="row"><span class="label">fall</span><span class="row chips" id="dir"></span></div>
+<div class="row"><span class="label">voice</span><input type="range" id="volVoice" min="0" max="200" value="100"><span id="volVoiceOut">100%</span></div>
+<div class="row"><span class="label">clothes</span><input type="range" id="volClothes" min="0" max="200" value="100"><span id="volClothesOut">100%</span></div>
+<div class="row"><span class="label">ground</span><input type="range" id="volGround" min="0" max="200" value="100"><span id="volGroundOut">100%</span></div>
 <div class="row"><button id="advClose">close</button></div>
 </div></div>
 <script>
@@ -147,44 +152,58 @@ document.getElementById("advBtn").onclick = () => adv.classList.add("open");
 document.getElementById("advClose").onclick = () => adv.classList.remove("open");
 adv.onclick = e => { if (e.target === adv) adv.classList.remove("open"); };
 
-const clip = path => new Audio(path + ".wav");
-const layer = key => clip(pick(LAND[key].map(x => x.startsWith("old_") || x.startsWith("c_player_fol") ? "Foley/" + x : "Land/" + x)));
-let playing = [], timers = [];
-function stopAll() { playing.forEach(a => a.pause()); playing = []; timers.forEach(clearTimeout); timers = []; }
-const ready = a => new Promise(r => { if (a.readyState >= 4) r(); else { a.oncanplaythrough = r; a.onerror = r; a.load(); } });
+// in-game volume of every clip (dB, summed up its Wwise parent containers; buses add 0 dB)
+const GAIN_DB = {"Male/c_player_voc_shout_deathbullet_exhale_male_a_01":-9.0,"Male/c_player_voc_shout_deathbullet_exhale_male_a_02":-9.0,"Male/c_player_voc_shout_deathbullet_exhale_male_a_03":-9.0,"Male/c_player_voc_shout_deathbullet_exhale_male_a_04":-9.0,"Male/c_player_voc_shout_deathbullet_exhale_male_a_05":-9.0,"Male/c_player_voc_shout_deathbullet_exhale_male_a_06":-9.0,"Male/c_player_voc_shout_deathbullet_exhale_male_a_07":-9.0,"Male/c_player_voc_shout_deathbullet_exhale_male_a_08":-9.0,"Male/c_player_voc_shout_deathbullet_exhale_male_a_09":-9.0,"Male/c_player_voc_shout_deathbullet_scream_male_a_01":0.0,"Male/c_player_voc_shout_deathbullet_scream_male_a_02":0.0,"Male/c_player_voc_shout_deathbullet_scream_male_a_03":0.0,"Male/c_player_voc_shout_deathbullet_scream_male_a_04":0.0,"Male/c_player_voc_shout_deathbullet_scream_male_a_05":0.0,"Male/c_player_voc_shout_deathbullet_scream_male_a_06":0.0,"Male/c_player_voc_shout_deathbullet_scream_male_a_07":0.0,"Male/c_player_voc_shout_deathbullet_scream_male_a_08":0.0,"Male/c_player_voc_shout_deathbullet_scream_male_a_09":0.0,"Female/c_player_voc_shout_deathbullet_exhale_female_a_01":-6.0,"Female/c_player_voc_shout_deathbullet_exhale_female_a_02":-6.0,"Female/c_player_voc_shout_deathbullet_exhale_female_a_03":-6.0,"Female/c_player_voc_shout_deathbullet_exhale_female_a_04":-6.0,"Female/c_player_voc_shout_deathbullet_exhale_female_a_05":-6.0,"Female/c_player_voc_shout_deathbullet_scream_female_a_01":0.0,"Female/c_player_voc_shout_deathbullet_scream_female_a_02":0.0,"Female/c_player_voc_shout_deathbullet_scream_female_a_03":0.0,"Female/c_player_voc_shout_deathbullet_scream_female_a_04":0.0,"Female/c_player_voc_shout_deathbullet_scream_female_a_05":0.0,"Female/c_player_voc_shout_deathbullet_scream_female_a_06":0.0,"Female/c_player_voc_shout_deathbullet_scream_female_a_07":0.0,"Bodyfall/bodyfall_metal_01":3.0,"Bodyfall/bodyfall_metal_02":3.0,"Bodyfall/bodyfall_metal_03":3.0,"Bodyfall/bodyfall_metal_04":3.0,"Bodyfall/bodyfall_metal_thick_01":3.0,"Bodyfall/bodyfall_metal_thick_02":3.0,"Bodyfall/bodyfall_metal_thick_03":3.0,"Bodyfall/bodyfall_metal_thick_04":3.0,"Bodyfall/bodyfall_rock_01":3.0,"Bodyfall/bodyfall_rock_02":3.0,"Bodyfall/bodyfall_rock_03":3.0,"Bodyfall/bodyfall_rock_04":3.0,"Bodyfall/bodyfall_rock_05":3.0,"Bodyfall/bodyfall_rock_06":3.0,"Bodyfall/bodyfall_vegetation_01":3.0,"Bodyfall/bodyfall_vegetation_02":3.0,"Bodyfall/bodyfall_vegetation_03":3.0,"Bodyfall/bodyfall_vegetation_04":3.0,"Bodyfall/bodyfall_water_01":3.0,"Bodyfall/bodyfall_water_02":3.0,"Bodyfall/bodyfall_water_03":3.0,"Bodyfall/bodyfall_water_04":3.0,"Bodyfall/bodyfall_water_05":3.0,"Bodyfall/bodyfall_water_06":3.0,"Bodyfall/bodyfall_wood_01":3.0,"Bodyfall/bodyfall_wood_02":3.0,"Bodyfall/bodyfall_wood_03":3.0,"Bodyfall/bodyfall_wood_04":3.0,"Bodyfall/bodyfall_wood_05":3.0,"Bodyfall/bodyfall_wood_06":3.0,"Bodyfall/c_global_mfx_bodyfall_cocoon_01":3.0,"Bodyfall/c_global_mfx_bodyfall_cocoon_02":3.0,"Bodyfall/c_global_mfx_bodyfall_cocoon_03":3.0,"Bodyfall/c_global_mfx_bodyfall_cocoon_04":3.0,"Bodyfall/c_global_mfx_bodyfall_fabric_01":3.0,"Bodyfall/c_global_mfx_bodyfall_fabric_02":3.0,"Bodyfall/c_global_mfx_bodyfall_fabric_03":3.0,"Bodyfall/c_global_mfx_bodyfall_fabric_04":3.0,"Bodyfall/c_global_mfx_bodyfall_fabric_05":3.0,"Bodyfall/c_global_mfx_bodyfall_fabric_06":3.0,"Bodyfall/c_global_mfx_bodyfall_flesh_01":3.0,"Bodyfall/c_global_mfx_bodyfall_flesh_02":3.0,"Bodyfall/c_global_mfx_bodyfall_flesh_03":3.0,"Bodyfall/c_global_mfx_bodyfall_flesh_04":3.0,"Bodyfall/c_global_mfx_bodyfall_forest_01":3.0,"Bodyfall/c_global_mfx_bodyfall_forest_02":3.0,"Bodyfall/c_global_mfx_bodyfall_forest_03":3.0,"Bodyfall/c_global_mfx_bodyfall_forest_04":3.0,"Bodyfall/c_global_mfx_bodyfall_glass_01":3.0,"Bodyfall/c_global_mfx_bodyfall_glass_02":3.0,"Bodyfall/c_global_mfx_bodyfall_glass_03":3.0,"Bodyfall/c_global_mfx_bodyfall_glass_04":3.0,"Bodyfall/c_global_mfx_bodyfall_gravel_01":3.0,"Bodyfall/c_global_mfx_bodyfall_gravel_02":3.0,"Bodyfall/c_global_mfx_bodyfall_gravel_03":3.0,"Bodyfall/c_global_mfx_bodyfall_gravel_04":3.0,"Bodyfall/c_global_mfx_bodyfall_gravel_05":3.0,"Bodyfall/c_global_mfx_bodyfall_gravel_06":3.0,"Bodyfall/c_global_mfx_bodyfall_leaves_01":3.0,"Bodyfall/c_global_mfx_bodyfall_leaves_02":3.0,"Bodyfall/c_global_mfx_bodyfall_leaves_03":3.0,"Bodyfall/c_global_mfx_bodyfall_leaves_04":3.0,"Bodyfall/c_global_mfx_bodyfall_mud_01":3.0,"Bodyfall/c_global_mfx_bodyfall_mud_02":3.0,"Bodyfall/c_global_mfx_bodyfall_mud_03":3.0,"Bodyfall/c_global_mfx_bodyfall_mud_04":3.0,"Bodyfall/c_global_mfx_bodyfall_soil_01":3.0,"Bodyfall/c_global_mfx_bodyfall_soil_02":3.0,"Bodyfall/c_global_mfx_bodyfall_soil_03":3.0,"Bodyfall/c_global_mfx_bodyfall_soil_04":3.0,"Bodyfall/c_global_mfx_bodyfall_soil_05":3.0,"Land/c_global_mfx_land_cocoon_01":-20.0,"Land/c_global_mfx_land_cocoon_01_v2":-20.0,"Land/c_global_mfx_land_cocoon_02":-20.0,"Land/c_global_mfx_land_cocoon_02_v2":-20.0,"Land/c_global_mfx_land_cocoon_03":-20.0,"Land/c_global_mfx_land_cocoon_03_v2":-20.0,"Land/c_global_mfx_land_cocoon_04":-20.0,"Land/c_global_mfx_land_cocoon_04_v2":-20.0,"Land/c_global_mfx_land_forest_01":-20.0,"Land/c_global_mfx_land_forest_01_v2":-20.0,"Land/c_global_mfx_land_forest_02":-20.0,"Land/c_global_mfx_land_forest_02_v2":-20.0,"Land/c_global_mfx_land_forest_03":-20.0,"Land/c_global_mfx_land_forest_03_v2":-20.0,"Land/c_global_mfx_land_forest_04":-20.0,"Land/c_global_mfx_land_forest_04_v2":-20.0,"Land/c_global_mfx_land_leaves_01":-20.0,"Land/c_global_mfx_land_leaves_01_v2":-20.0,"Land/c_global_mfx_land_leaves_02":-20.0,"Land/c_global_mfx_land_leaves_02_v2":-20.0,"Land/c_global_mfx_land_leaves_03":-20.0,"Land/c_global_mfx_land_leaves_03_v2":-20.0,"Land/c_global_mfx_land_leaves_04":-20.0,"Land/c_global_mfx_land_leaves_04_v2":-20.0,"Land/c_global_mfx_land_metal_hollow_01":-20.0,"Land/c_global_mfx_land_metal_hollow_01_v2":-20.0,"Land/c_global_mfx_land_metal_hollow_02":-20.0,"Land/c_global_mfx_land_metal_hollow_02_v2":-20.0,"Land/c_global_mfx_land_metal_hollow_03":-20.0,"Land/c_global_mfx_land_metal_hollow_03_v2":-20.0,"Land/c_global_mfx_land_metal_hollow_04":-20.0,"Land/c_global_mfx_land_metal_hollow_04_v2":-20.0,"Land/c_player_fts_land_boot_01":-15.0,"Land/c_player_fts_land_boot_02":-15.0,"Land/c_player_fts_land_boot_03":-15.0,"Land/c_player_fts_land_boot_04":-15.0,"Land/c_player_fts_land_boot_05":-15.0,"Land/c_player_fts_land_boot_06":-15.0,"Land/c_player_fts_land_boot_07":-15.0,"Land/c_player_fts_land_boot_08":-15.0,"Land/c_player_fts_land_boot_09":-15.0,"Land/footstep_land_metal_thick_01":-20.0,"Land/footstep_land_metal_thick_01_v2":-20.0,"Land/footstep_land_metal_thick_02":-20.0,"Land/footstep_land_metal_thick_02_v2":-20.0,"Land/footstep_land_metal_thick_03":-20.0,"Land/footstep_land_metal_thick_03_v2":-20.0,"Land/footstep_land_metal_thick_04":-20.0,"Land/footstep_land_metal_thick_04_v2":-20.0,"Land/footstep_land_metal_thick_05":-20.0,"Land/footstep_land_metal_thick_05_v2":-20.0,"Land/footstep_land_metal_thick_06":-20.0,"Land/footstep_land_metal_thick_06_v2":-20.0,"Land/footstep_land_metal_thick_07":-20.0,"Land/footstep_land_metal_thick_07_v2":-20.0,"Land/footstep_land_metal_thick_08":-20.0,"Land/footstep_land_metal_thick_08_v2":-20.0,"Land/Play_c_global_fts_land_glass_01":-20.0,"Land/Play_c_global_fts_land_glass_01_v2":-20.0,"Land/Play_c_global_fts_land_glass_02":-20.0,"Land/Play_c_global_fts_land_glass_02_v2":-20.0,"Land/Play_c_global_fts_land_glass_03":-20.0,"Land/Play_c_global_fts_land_glass_03_v2":-20.0,"Land/Play_c_global_fts_land_glass_04":-20.0,"Land/Play_c_global_fts_land_glass_04_v2":-20.0,"Land/Play_c_global_fts_land_glass_05":-20.0,"Land/Play_c_global_fts_land_glass_05_v2":-20.0,"Land/Play_c_global_fts_land_glass_06":-20.0,"Land/Play_c_global_fts_land_glass_06_v2":-20.0,"Land/Play_c_global_fts_land_glass_07":-20.0,"Land/Play_c_global_fts_land_glass_07_v2":-20.0,"Land/Play_c_global_fts_land_gravel_01":-20.0,"Land/Play_c_global_fts_land_gravel_01_v2":-20.0,"Land/Play_c_global_fts_land_gravel_02":-20.0,"Land/Play_c_global_fts_land_gravel_02_v2":-20.0,"Land/Play_c_global_fts_land_gravel_03":-20.0,"Land/Play_c_global_fts_land_gravel_03_v2":-20.0,"Land/Play_c_global_fts_land_gravel_04":-20.0,"Land/Play_c_global_fts_land_gravel_04_v2":-20.0,"Land/Play_c_global_fts_land_gravel_05":-20.0,"Land/Play_c_global_fts_land_gravel_05_v2":-20.0,"Land/Play_c_global_fts_land_gravel_06":-20.0,"Land/Play_c_global_fts_land_gravel_06_v2":-20.0,"Land/Play_c_global_fts_land_gravel_07":-20.0,"Land/Play_c_global_fts_land_gravel_07_v2":-20.0,"Land/Play_c_global_fts_land_gravel_08":-20.0,"Land/Play_c_global_fts_land_gravel_08_v2":-20.0,"Land/Play_c_global_fts_land_mud_01":-20.0,"Land/Play_c_global_fts_land_mud_01_v2":-20.0,"Land/Play_c_global_fts_land_mud_02":-20.0,"Land/Play_c_global_fts_land_mud_02_v2":-20.0,"Land/Play_c_global_fts_land_mud_03":-20.0,"Land/Play_c_global_fts_land_mud_03_v2":-20.0,"Land/Play_c_global_fts_land_mud_04":-20.0,"Land/Play_c_global_fts_land_mud_04_v2":-20.0,"Land/Play_c_global_fts_land_mud_05":-20.0,"Land/Play_c_global_fts_land_mud_05_v2":-20.0,"Land/Play_c_global_fts_land_mud_06":-20.0,"Land/Play_c_global_fts_land_mud_06_v2":-20.0,"Land/Play_c_global_fts_land_mud_07":-20.0,"Land/Play_c_global_fts_land_mud_07_v2":-20.0,"Land/Play_c_global_fts_land_rock_01":-20.0,"Land/Play_c_global_fts_land_rock_01_v2":-20.0,"Land/Play_c_global_fts_land_rock_02":-20.0,"Land/Play_c_global_fts_land_rock_02_v2":-20.0,"Land/Play_c_global_fts_land_rock_03":-20.0,"Land/Play_c_global_fts_land_rock_03_v2":-20.0,"Land/Play_c_global_fts_land_rock_04":-20.0,"Land/Play_c_global_fts_land_rock_04_v2":-20.0,"Land/Play_c_global_fts_land_rock_05":-20.0,"Land/Play_c_global_fts_land_rock_05_v2":-20.0,"Land/Play_c_global_fts_land_rock_06":-20.0,"Land/Play_c_global_fts_land_rock_06_v2":-20.0,"Land/Play_c_global_fts_land_rock_07":-20.0,"Land/Play_c_global_fts_land_rock_07_v2":-20.0,"Land/Play_c_global_fts_land_rock_08":-20.0,"Land/Play_c_global_fts_land_rock_08_v2":-20.0,"Land/Play_c_global_fts_land_rock_09":-20.0,"Land/Play_c_global_fts_land_rock_09_v2":-20.0,"Land/Play_c_global_fts_land_rock_10":-20.0,"Land/Play_c_global_fts_land_rock_10_v2":-20.0,"Land/Play_c_global_fts_land_soil_01":-20.0,"Land/Play_c_global_fts_land_soil_01_v2":-20.0,"Land/Play_c_global_fts_land_soil_02":-20.0,"Land/Play_c_global_fts_land_soil_02_v2":-20.0,"Land/Play_c_global_fts_land_soil_03":-20.0,"Land/Play_c_global_fts_land_soil_03_v2":-20.0,"Land/Play_c_global_fts_land_soil_04":-20.0,"Land/Play_c_global_fts_land_soil_04_v2":-20.0,"Land/Play_c_global_fts_land_soil_05":-20.0,"Land/Play_c_global_fts_land_soil_05_v2":-20.0,"Land/Play_c_global_fts_land_soil_06":-20.0,"Land/Play_c_global_fts_land_soil_06_v2":-20.0,"Land/Play_c_global_fts_land_soil_07":-20.0,"Land/Play_c_global_fts_land_soil_07_v2":-20.0,"Land/Play_c_global_fts_land_soil_08":-20.0,"Land/Play_c_global_fts_land_soil_08_v2":-20.0,"Land/Play_c_global_fts_land_soil_09":-20.0,"Land/Play_c_global_fts_land_soil_09_v2":-20.0,"Land/Play_c_global_fts_land_vegetation_01":-20.0,"Land/Play_c_global_fts_land_vegetation_01_v2":-20.0,"Land/Play_c_global_fts_land_vegetation_02":-20.0,"Land/Play_c_global_fts_land_vegetation_02_v2":-20.0,"Land/Play_c_global_fts_land_vegetation_03":-20.0,"Land/Play_c_global_fts_land_vegetation_03_v2":-20.0,"Land/Play_c_global_fts_land_vegetation_04":-20.0,"Land/Play_c_global_fts_land_vegetation_04_v2":-20.0,"Land/Play_c_global_fts_land_vegetation_05":-20.0,"Land/Play_c_global_fts_land_vegetation_05_v2":-20.0,"Land/Play_c_global_fts_land_vegetation_06":-20.0,"Land/Play_c_global_fts_land_vegetation_06_v2":-20.0,"Land/Play_c_global_fts_land_water_01":-12.0,"Land/Play_c_global_fts_land_water_01_v2":-12.0,"Land/Play_c_global_fts_land_water_02":-12.0,"Land/Play_c_global_fts_land_water_02_v2":-12.0,"Land/Play_c_global_fts_land_water_03":-12.0,"Land/Play_c_global_fts_land_water_03_v2":-12.0,"Land/Play_c_global_fts_land_water_04":-12.0,"Land/Play_c_global_fts_land_water_04_v2":-12.0,"Land/Play_c_global_fts_land_water_05":-12.0,"Land/Play_c_global_fts_land_water_05_v2":-12.0,"Land/Play_c_global_fts_land_water_06":-12.0,"Land/Play_c_global_fts_land_water_06_v2":-12.0,"Land/Play_c_global_fts_land_water_07":-12.0,"Land/Play_c_global_fts_land_water_07_v2":-12.0,"Land/Play_c_global_fts_land_water_08":-12.0,"Land/Play_c_global_fts_land_water_08_v2":-12.0,"Land/Play_c_global_fts_land_water_09":-12.0,"Land/Play_c_global_fts_land_water_09_v2":-12.0,"Land/Play_c_global_fts_land_wood_01":-20.0,"Land/Play_c_global_fts_land_wood_01_v2":-20.0,"Land/Play_c_global_fts_land_wood_02":-20.0,"Land/Play_c_global_fts_land_wood_02_v2":-20.0,"Land/Play_c_global_fts_land_wood_03":-20.0,"Land/Play_c_global_fts_land_wood_03_v2":-20.0,"Land/Play_c_global_fts_land_wood_04":-20.0,"Land/Play_c_global_fts_land_wood_04_v2":-20.0,"Land/Play_c_global_fts_land_wood_05":-20.0,"Land/Play_c_global_fts_land_wood_05_v2":-20.0,"Land/Play_c_global_fts_land_wood_06":-20.0,"Land/Play_c_global_fts_land_wood_06_v2":-20.0,"Foley/c_player_fol_heavy_base_new_01":-17.0,"Foley/c_player_fol_heavy_base_new_02":-17.0,"Foley/c_player_fol_heavy_base_new_03":-17.0,"Foley/c_player_fol_heavy_base_new_04":-17.0,"Foley/c_player_fol_heavy_base_new_05":-17.0,"Foley/c_player_fol_heavy_base_new_06":-17.0,"Foley/c_player_fol_heavy_base_new_07":-17.0,"Foley/c_player_fol_heavy_base_new_08":-17.0,"Foley/c_player_fol_heavy_base_new_09":-17.0,"Foley/c_player_fol_heavy_base_new_10":-17.0,"Foley/c_player_fol_heavy_base_new_11":-17.0,"Foley/c_player_fol_heavy_base_new_12":-17.0,"Foley/c_player_fol_heavy_leather_01":-17.0,"Foley/c_player_fol_heavy_leather_02":-17.0,"Foley/c_player_fol_heavy_leather_03":-20.0,"Foley/c_player_fol_heavy_leather_04":-17.0,"Foley/c_player_fol_heavy_leather_05":-17.0,"Foley/c_player_fol_heavy_leather_06":-17.0,"Foley/c_player_fol_heavy_leather_07":-17.0,"Foley/c_player_fol_heavy_leather_08":-17.0,"Foley/c_player_fol_heavy_leather_09":-17.0,"Foley/c_player_fol_heavy_leather_10":-17.0,"Foley/c_player_fol_heavy_leather_11":-17.0,"Foley/c_player_fol_heavy_leather_12":-17.0,"Foley/c_player_fol_heavy_leather_13":-17.0,"Foley/c_player_fol_heavy_metal_01":-15.0,"Foley/c_player_fol_heavy_metal_02":-15.0,"Foley/c_player_fol_heavy_metal_03":-15.0,"Foley/c_player_fol_heavy_metal_04":-15.0,"Foley/c_player_fol_heavy_metal_05":-15.0,"Foley/c_player_fol_heavy_metal_06":-15.0,"Foley/c_player_fol_heavy_metal_07":-15.0,"Foley/c_player_fol_heavy_metal_08":-15.0,"Foley/c_player_fol_heavy_metal_09":-15.0,"Foley/c_player_fol_heavy_metal_10":-15.0,"Foley/c_player_fol_heavy_metal_11":-15.0,"Foley/c_player_fol_heavy_metal_12":-15.0,"Foley/c_player_fol_heavy_metal_13":-15.0,"Foley/c_player_fol_heavy_metal_14":-15.0,"Foley/c_player_fol_heavy_metal_15":-15.0,"Foley/c_player_fol_heavy_metal_16":-15.0,"Foley/c_player_fol_heavy_metal_17":-15.0,"Foley/c_player_fol_heavy_metal_18":-15.0,"Foley/c_player_fol_heavy_metal_19":-15.0,"Foley/old_c_player_fol_heavy_fabric_01":-17.0,"Foley/old_c_player_fol_heavy_fabric_01_v2":-17.0,"Foley/old_c_player_fol_heavy_fabric_02":-17.0,"Foley/old_c_player_fol_heavy_fabric_02_v2":-17.0,"Foley/old_c_player_fol_heavy_fabric_03":-17.0,"Foley/old_c_player_fol_heavy_fabric_03_v2":-17.0,"Foley/old_c_player_fol_heavy_jingle_01":-38.0,"Foley/old_c_player_fol_heavy_jingle_01_v2":-38.0,"Foley/old_c_player_fol_heavy_jingle_02":-38.0,"Foley/old_c_player_fol_heavy_jingle_02_v2":-38.0,"Foley/old_c_player_fol_heavy_jingle_03":-38.0,"Foley/old_c_player_fol_heavy_jingle_03_v2":-38.0,"Foley/old_c_player_fol_heavy_leather_01":-17.0,"Foley/old_c_player_fol_heavy_leather_01_v2":-17.0,"Foley/old_c_player_fol_heavy_leather_02":-17.0,"Foley/old_c_player_fol_heavy_leather_02_v2":-17.0,"Foley/old_c_player_fol_heavy_leather_03":-20.0,"Foley/old_c_player_fol_heavy_leather_03_v2":-20.0,"Foley/old_c_player_fol_light_fabric_01":-23.0,"Foley/old_c_player_fol_light_fabric_01_v2":-23.0,"Foley/old_c_player_fol_light_fabric_02":-23.0,"Foley/old_c_player_fol_light_fabric_02_v2":-23.0,"Foley/old_c_player_fol_light_fabric_03":-23.0,"Foley/old_c_player_fol_light_fabric_03_v2":-23.0,"Foley/old_c_player_fol_light_jingle_01":-38.0,"Foley/old_c_player_fol_light_jingle_01_v2":-38.0,"Foley/old_c_player_fol_light_jingle_02":-38.0,"Foley/old_c_player_fol_light_jingle_02_v2":-38.0,"Foley/old_c_player_fol_light_jingle_03":-38.0,"Foley/old_c_player_fol_light_jingle_03_v2":-38.0,"Foley/old_c_player_fol_light_leather_01":-35.0,"Foley/old_c_player_fol_light_leather_01_v2":-35.0,"Foley/old_c_player_fol_light_leather_02":-22.0,"Foley/old_c_player_fol_light_leather_02_v2":-22.0,"Foley/old_c_player_fol_light_leather_03":-22.0,"Foley/old_c_player_fol_light_leather_03_v2":-22.0,"Foley/old_c_player_fol_medium_fabric_01":-20.0,"Foley/old_c_player_fol_medium_fabric_01_v2":-20.0,"Foley/old_c_player_fol_medium_fabric_02":-20.0,"Foley/old_c_player_fol_medium_fabric_02_v2":-20.0,"Foley/old_c_player_fol_medium_fabric_03":-20.0,"Foley/old_c_player_fol_medium_fabric_03_v2":-20.0,"Foley/old_c_player_fol_medium_jingle_01":-35.0,"Foley/old_c_player_fol_medium_jingle_01_v2":-35.0,"Foley/old_c_player_fol_medium_jingle_02":-35.0,"Foley/old_c_player_fol_medium_jingle_02_v2":-35.0,"Foley/old_c_player_fol_medium_jingle_03":-35.0,"Foley/old_c_player_fol_medium_jingle_03_v2":-35.0,"Foley/old_c_player_fol_medium_leather_01":-26.0,"Foley/old_c_player_fol_medium_leather_01_v2":-26.0,"Foley/old_c_player_fol_medium_leather_02":-26.0,"Foley/old_c_player_fol_medium_leather_02_v2":-26.0,"Foley/old_c_player_fol_medium_leather_03":-26.0,"Foley/old_c_player_fol_medium_leather_03_v2":-26.0};
+const vol = { voice: "volVoice", clothes: "volClothes", ground: "volGround" };
+for (const id of Object.values(vol)) {
+  const r = document.getElementById(id), o = document.getElementById(id + "Out");
+  r.oninput = () => { o.textContent = r.value + "%"; };
+}
+const level = cat => Number(document.getElementById(vol[cat]).value) / 100;
+const gainOf = (path, cat) => Math.pow(10, (GAIN_DB[path] ?? 0) / 20) * (cat ? level(cat) : 1);
+const ctx = new AudioContext();
+const cache = {};
+const load = path => cache[path] ??= fetch(encodeURI(path) + ".wav").then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b));
+const layerPath = key => pick(LAND[key].map(x => x.startsWith("old_") || x.startsWith("c_player_fol") ? "Foley/" + x : "Land/" + x));
+let sources = [];
+function stopAll() { sources.forEach(s => { try { s.stop(); } catch (e) {} }); sources = []; }
+function play(parts, t0) {
+  for (const p of parts) {
+    const src = ctx.createBufferSource(), g = ctx.createGain();
+    src.buffer = p.buf; g.gain.value = p.gain; src.connect(g).connect(ctx.destination);
+    src.start(t0 + p.time); sources.push(src);
+  }
+}
 let last = null;
 async function die(k) {
-  stopAll();
+  stopAll(); ctx.resume();
   const v = voice[k], K = k.toUpperCase();
   const t = timelines[choose("dir", Object.keys(timelines))];
-  const plan = [];
-  const scream = clip(v.dir + chooseClip("scream" + K, v.scream));
-  const exhale = clip(v.dir + chooseClip("exhale" + K, v.exhale));
-  plan.push([0, scream]);
+  const list = [];   // [time or null (after scream), path, category]
+  list.push([0, v.dir + chooseClip("scream" + K, v.scream), "voice"]);
+  const exhalePath = v.dir + chooseClip("exhale" + K, v.exhale);
   const name = [k === "m" ? "male" : "female"];
   if (document.getElementById("useClothes").checked) {
     const w = choose("rustle", ["light", "medium", "heavy"]);
     name.push(w);
-    for (const p of ["fabric", "leather", "jingle"]) plan.push([t.move * CLIP, layer("old_c_player_fol_" + w + "_" + p)]);
-    for (const p of ["metal", "base_new", "leather"]) plan.push([t.heavy * CLIP, layer("c_player_fol_heavy_" + p)]);
+    for (const p of ["fabric", "leather", "jingle"]) list.push([t.move * CLIP, layerPath("old_c_player_fol_" + w + "_" + p), "clothes"]);
+    for (const p of ["metal", "base_new", "leather"]) list.push([t.heavy * CLIP, layerPath("c_player_fol_heavy_" + p), "clothes"]);
   }
   if (document.getElementById("useGround").checked) {
     const g = choose("ground", Object.keys(grounds));
     name.push(g);
     const [bf, land] = grounds[g];
-    plan.push([t.bodyfall * CLIP, clip(BF + pick(bf))]);
+    list.push([t.bodyfall * CLIP, BF + pick(bf), "ground"]);
     for (const tl of t.land) {
-      plan.push([tl * CLIP, layer(land)]);
-      if (g !== "water") plan.push([tl * CLIP, layer("c_player_fts_land_boot")]);
+      list.push([tl * CLIP, layerPath(land), "ground"]);
+      if (g !== "water") list.push([tl * CLIP, layerPath("c_player_fts_land_boot"), "ground"]);
     }
   }
-  await Promise.all([exhale, ...plan.map(p => p[1])].map(ready));
-  plan.push([scream.duration + SEQ_DELAY, exhale]);
-  playing = plan.map(p => p[1]);
-  for (const [time, a] of plan) {
-    if (time === 0) a.play(); else timers.push(setTimeout(() => a.play(), time * 1000));
-  }
-  last = { name: "hunt death " + name.join(" "), parts: plan.map(([time, a]) => [time, a.src]) };
+  const bufs = await Promise.all([...list.map(x => load(x[1])), load(exhalePath)]);
+  const parts = list.map((x, i) => ({ time: x[0], buf: bufs[i], gain: gainOf(x[1], x[2]) }));
+  parts.push({ time: bufs[0].duration + SEQ_DELAY, buf: bufs[bufs.length - 1], gain: gainOf(exhalePath, "voice") });
+  play(parts, ctx.currentTime + 0.05);
+  last = { name: "hunt death " + name.join(" "), parts };
   document.getElementById("download").disabled = false;
 }
 function wav(buf) {
@@ -204,22 +223,23 @@ function wav(buf) {
 }
 document.getElementById("download").onclick = async () => {
   if (!last) return;
-  const sr = 48000, tmp = new OfflineAudioContext(2, 1, sr);
-  const bufs = await Promise.all(last.parts.map(([, url]) => fetch(url).then(r => r.arrayBuffer()).then(b => tmp.decodeAudioData(b))));
-  const len = Math.max(...last.parts.map(([t], i) => t + bufs[i].duration)) + 0.1;
-  const ctx = new OfflineAudioContext(2, Math.ceil(len * sr), sr);
-  last.parts.forEach(([t], i) => { const src = ctx.createBufferSource(); src.buffer = bufs[i]; src.connect(ctx.destination); src.start(t); });
+  const sr = 48000;
+  const len = Math.max(...last.parts.map(p => p.time + p.buf.duration)) + 0.1;
+  const off = new OfflineAudioContext(2, Math.ceil(len * sr), sr);
+  for (const p of last.parts) {
+    const src = off.createBufferSource(), g = off.createGain();
+    src.buffer = p.buf; g.gain.value = p.gain; src.connect(g).connect(off.destination); src.start(p.time);
+  }
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(wav(await ctx.startRendering()));
+  a.href = URL.createObjectURL(wav(await off.startRendering()));
   a.download = last.name + ".wav";
   a.click();
 };
 document.getElementById("m").onclick = () => die("m");
 document.getElementById("f").onclick = () => die("f");
-document.querySelectorAll("[data-ui]").forEach(b => b.onclick = () => {
-  stopAll();
-  const a = clip("UI death/" + b.dataset.ui);
-  playing = [a]; a.play();
+document.querySelectorAll("[data-ui]").forEach(b => b.onclick = async () => {
+  stopAll(); ctx.resume();
+  play([{ time: 0, buf: await load("UI death/" + b.dataset.ui), gain: 1 }], ctx.currentTime + 0.05);
 });
 </script>
 <script>(function(){try{if(navigator.webdriver)return;navigator.sendBeacon("https://stats.discord-sync.workers.dev/e",JSON.stringify({u:location.href,r:document.referrer,w:screen.width}))}catch(e){}})()</script>
