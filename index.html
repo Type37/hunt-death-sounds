@@ -14,11 +14,11 @@ button, input, label, select { font: inherit; }
 .opt { font-size: clamp(17px, 4.6vw, 24px); }
 .ui { font-size: clamp(15px, 4vw, 22px); }
 .chips button[aria-pressed="true"] { outline: 2px solid; }
-.chips.off button, select.off { opacity: 0.35; }
+.chips.off button { opacity: 0.35; }
 input[type=checkbox] { width: 1em; height: 1em; }
-#adv { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.35); }
-#adv.open { display: flex; }
-#adv > div { background: Canvas; color: CanvasText; padding: 0.8em; display: flex; flex-direction: column; gap: 0.5em; font-size: clamp(16px, 4.4vw, 22px); max-width: calc(100vw - 32px); max-height: calc(100svh - 32px); overflow: auto; box-sizing: border-box; }
+.overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.35); }
+.overlay.open { display: flex; }
+.overlay > div { background: Canvas; color: CanvasText; padding: 0.8em; display: flex; flex-direction: column; gap: 0.5em; font-size: clamp(16px, 4.4vw, 22px); max-width: calc(100vw - 32px); max-height: calc(100svh - 32px); overflow: auto; box-sizing: border-box; }
 #adv .label { min-width: 6em; text-align: right; }
 @media (max-width: 600px) { #adv .label { min-width: 0; width: 100%; text-align: center; } }
 button { touch-action: manipulation; }
@@ -31,7 +31,7 @@ button { touch-action: manipulation; }
 </div>
 <div class="row opt">
 <label><input type="checkbox" id="useGround" checked> ground</label>
-<select id="ground"></select>
+<span class="row chips" id="ground"></span>
 </div>
 <div class="row opt">
 <label><input type="checkbox" id="useClothes" checked> clothes</label>
@@ -47,7 +47,8 @@ button { touch-action: manipulation; }
 <button data-ui="ui_hud_player_dead_loop">STARE AT DEATH</button>
 <button data-ui="ui_menu_hunter_dead">THAT HUNTER IS GONE</button>
 </div>
-<div id="adv"><div>
+<div id="moreGround" class="overlay"><div><div class="row chips" id="groundMore"></div></div></div>
+<div id="adv" class="overlay"><div>
 <div class="row"><span class="label">scream ♂️</span><span class="row chips" id="screamM"></span></div>
 <div class="row"><span class="label">exhale ♂️</span><span class="row chips" id="exhaleM"></span></div>
 <div class="row"><span class="label">scream ♀️</span><span class="row chips" id="screamF"></span></div>
@@ -105,10 +106,30 @@ function chips(id, values, initial) {
   }
 }
 const short = n => String(Number(n.slice(-2)));
-const gsel = document.getElementById("ground");
-for (const g of ["random", ...Object.keys(grounds)]) gsel.add(new Option(g, g));
-gsel.value = "soil"; state.ground = "soil";
-gsel.onchange = () => { state.ground = gsel.value; };
+const COMMON = ["soil", "mud", "forest", "grass", "wood"];
+const groundBox = document.getElementById("ground"), groundMore = document.getElementById("groundMore");
+const moreOv = document.getElementById("moreGround");
+const moreBtn = document.createElement("button");
+state.ground = "soil";
+function setGround(v) {
+  state.ground = v;
+  const rare = !["random", ...COMMON].includes(v);
+  moreBtn.textContent = rare ? v : "more…";
+  groundBox.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b === moreBtn ? rare : b.textContent === v));
+  groundMore.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.textContent === v));
+}
+for (const v of ["random", ...COMMON]) {
+  const b = document.createElement("button"); b.textContent = v; b.onclick = () => setGround(v); groundBox.append(b);
+}
+moreBtn.onclick = () => moreOv.classList.add("open");
+groundBox.append(moreBtn);
+for (const v of Object.keys(grounds).filter(g => !COMMON.includes(g))) {
+  const b = document.createElement("button"); b.textContent = v;
+  b.onclick = () => { setGround(v); moreOv.classList.remove("open"); };
+  groundMore.append(b);
+}
+moreOv.onclick = e => { if (e.target === moreOv) moreOv.classList.remove("open"); };
+setGround("soil");
 chips("rustle", ["light", "medium", "heavy"], "light");
 chips("screamM", voice.m.scream.map(short), "random");
 chips("exhaleM", voice.m.exhale.map(short), "random");
