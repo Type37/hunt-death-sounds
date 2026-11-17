@@ -45,6 +45,10 @@ button { touch-action: manipulation; }
 <span class="row chips" id="ground"></span>
 </div>
 <div class="row opt">
+<span>speed</span>
+<span class="row chips" id="speed"></span>
+</div>
+<div class="row opt">
 <button id="download" disabled>download ⬇️</button>
 <button id="advBtn">advanced</button>
 </div>
@@ -62,7 +66,6 @@ button { touch-action: manipulation; }
 <div class="row"><span class="label">scream ♀️</span><span class="row chips" id="screamF"></span></div>
 <div class="row"><span class="label">exhale ♀️</span><span class="row chips" id="exhaleF"></span></div>
 <div class="row"><label><input type="checkbox" id="useClothes" checked> gear</label></div>
-<div class="row"><span class="label">speed</span><span class="row chips" id="speed"></span></div>
 <div class="row"><span class="label">fall</span><span class="row chips" id="dir"></span></div>
 <div class="row"><span class="label">distance</span><input type="range" id="dist" min="0" max="70" value="10"><span id="distOut">10 m</span></div>
 <div class="row"><span class="label">voice</span><input type="range" id="volVoice" min="0" max="200" value="100"><span id="volVoiceOut">100%</span></div>
@@ -158,30 +161,29 @@ const choose = (id, all) => state[id] === "random" ? pick(all) : state[id];
 
 // hover tips (plain words, numbers from the game data)
 const TIPS = {
-  m: "Male hunter death.",
-  f: "Female hunter death.",
-  "actor:you": "Your own death. Gear is 3 dB louder and boots are -12 dB. No distance fade. The female voice always ends on exhale 4.",
-  "actor:them": "Someone else dies, teammate or enemy (the game uses the same sounds). Gear -15 to -17 dB, boots -15 dB. Fades with distance.",
-  useGround: "The body hitting the floor (+3 dB) and two landing thumps (-20 dB), plus boots (-15 dB, -12 dB for you).",
-  useClothes: "The hunter's kit rattling as they fall (-20 to -38 dB), then a heavier gear hit (-15 to -17 dB).",
-  "speed:sneak": "How fast they were moving when they died. Sneak is the quietest rattle (loudest part -23 dB).",
-  "speed:walk": "How fast they were moving when they died. Walk: loudest part -20 dB.",
-  "speed:run": "How fast they were moving when they died. Run is the loudest rattle (loudest part -17 dB).",
-  "ground:water": "Water: no boot sound. Your own death adds a splash (-26 dB).",
-  "ground:more…": "All ground types.",
-  random: "Picks one at random each time.",
-  download: "Saves the last death as a WAV file.",
-  advBtn: "More options.",
-  "dir:front": "Which way the body falls. Front, left and right: heavy gear hit at 0.65 s.",
-  "dir:left": "Which way the body falls. Front, left and right: heavy gear hit at 0.65 s.",
-  "dir:right": "Which way the body falls. Front, left and right: heavy gear hit at 0.65 s.",
-  "dir:back": "Which way the body falls. Back: landing thumps come sooner, heavy gear hit later (1.11 s).",
-  dist: "How far you are from the body. The voice fades slower than the rest. Gear goes silent past 20 m. Your own death is always 0 m.",
-  volVoice: "100% is the game's mix: scream 0 dB, exhale -9 dB (-6 dB female).",
-  volClothes: "100% is the game's mix.",
-  volGround: "100% is the game's mix.",
-  useMenu: "The HUD sound the game plays (-2 dB). An enemy death has no HUD sound in the game.",
-  headshot: "No scream. In the game a headshot only cuts the voice off."
+  m: "male hunter",
+  f: "female hunter",
+  "actor:you": "your own death. gear and boots a bit louder, no distance fade",
+  "actor:them": "teammate or enemy. same sounds in game",
+  useGround: "body hitting the floor + landing thumps",
+  useClothes: "kit rattling as they fall",
+  "speed:sneak": "quietest rattle",
+  "speed:walk": "medium rattle",
+  "speed:run": "loudest rattle",
+  "ground:water": "no boots. splash on your own death",
+  "ground:more…": "all grounds",
+  random: "random each time",
+  download: "save the last death as a wav",
+  "dir:front": "falls forward",
+  "dir:back": "falls back, thumps come sooner",
+  "dir:left": "falls left",
+  "dir:right": "falls right",
+  dist: "how far away you are. gear goes quiet past 20m",
+  volVoice: "100 = game mix",
+  volClothes: "100 = game mix",
+  volGround: "100 = game mix",
+  useMenu: "game hud sound. enemies get none",
+  headshot: "no scream. headshots just cut the voice"
 };
 function applyTips() {
   for (const [k, t] of Object.entries(TIPS)) {
