@@ -161,29 +161,27 @@ const choose = (id, all) => state[id] === "random" ? pick(all) : state[id];
 
 // hover tips (plain words, numbers from the game data)
 const TIPS = {
-  m: "male hunter",
-  f: "female hunter",
-  "actor:you": "your own death. gear and boots a bit louder, no distance fade",
-  "actor:them": "teammate or enemy. same sounds in game",
-  useGround: "body hitting the floor + landing thumps",
-  useClothes: "kit rattling as they fall",
-  "speed:sneak": "quietest rattle",
-  "speed:walk": "medium rattle",
-  "speed:run": "loudest rattle",
-  "ground:water": "no boots. splash on your own death",
+  "actor:you": "gear +3db, boots +3db, no distance fade",
+  "actor:them": "teammate or enemy, same sounds",
+  useGround: "body drop +3db, thumps -20db, boots -15db",
+  useClothes: "rattle -17 to -38db, gear hit -15db",
+  "speed:sneak": "sneak is -23db",
+  "speed:walk": "walk is -20db",
+  "speed:run": "run is -17db",
+  "ground:water": "no boots, splash -26db (you only)",
   "ground:more…": "all grounds",
   random: "random each time",
-  download: "save the last death as a wav",
-  "dir:front": "falls forward",
-  "dir:back": "falls back, thumps come sooner",
-  "dir:left": "falls left",
-  "dir:right": "falls right",
-  dist: "how far away you are. gear goes quiet past 20m",
-  volVoice: "100 = game mix",
+  download: "saves a wav",
+  "dir:front": "gear hit at 0.65s",
+  "dir:back": "gear hit at 1.11s, thumps at 0.72s",
+  "dir:left": "gear hit at 0.65s",
+  "dir:right": "gear hit at 0.65s",
+  dist: "gear silent past 20m",
+  volVoice: "scream 0db, exhale -9db",
   volClothes: "100 = game mix",
   volGround: "100 = game mix",
-  useMenu: "game hud sound. enemies get none",
-  headshot: "no scream. headshots just cut the voice"
+  useMenu: "-2db, enemies get none",
+  headshot: "no scream"
 };
 function applyTips() {
   for (const [k, t] of Object.entries(TIPS)) {
