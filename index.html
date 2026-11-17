@@ -97,7 +97,7 @@ function chips(id, values, initial, onPick) {
 const voiceFiles = (g, kind) => [...new Set(EV.voice[g].player.flat().map(c => c[0]).filter(f => f.includes(kind)))].sort();
 const numOf = f => String(Number(f.slice(-2)));
 chips("actor", Object.keys(ACTORS), "enemy");
-chips("speed", ["random", "sneak", "walk", "run"], "sneak");
+chips("speed", ["random", "sneak", "walk", "run"], "walk");
 chips("screamM", ["random", ...voiceFiles("male_a", "scream").map(numOf)], "random");
 chips("exhaleM", ["random", ...voiceFiles("male_a", "exhale").map(numOf)], "random");
 chips("screamF", ["random", ...voiceFiles("female_a", "scream").map(numOf)], "random");
