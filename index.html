@@ -128,7 +128,7 @@ for (const v of ["random", ...COMMON]) {
 }
 moreBtn.onclick = () => moreOv.classList.add("open");
 groundBox.append(moreBtn);
-for (const v of Object.keys(grounds).filter(g => !COMMON.includes(g))) {
+for (const v of ["random", ...Object.keys(grounds)]) {
   const b = document.createElement("button"); b.textContent = v;
   b.onclick = () => { setGround(v); moreOv.classList.remove("open"); };
   groundMore.append(b);
