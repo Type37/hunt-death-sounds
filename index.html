@@ -36,7 +36,7 @@ button { touch-action: manipulation; }
 <span class="row chips" id="ground"></span>
 </div>
 <div class="row opt">
-<label><input type="checkbox" id="useClothes" checked> clothes</label>
+<label><input type="checkbox" id="useClothes" checked> gear</label>
 <span class="row chips" id="speed"></span>
 </div>
 <div class="row opt">
@@ -58,8 +58,9 @@ button { touch-action: manipulation; }
 <div class="row"><span class="label">exhale ♀️</span><span class="row chips" id="exhaleF"></span></div>
 <div class="row"><span class="label">fall</span><span class="row chips" id="dir"></span></div>
 <div class="row"><span class="label">voice</span><input type="range" id="volVoice" min="0" max="200" value="100"><span id="volVoiceOut">100%</span></div>
-<div class="row"><span class="label">clothes</span><input type="range" id="volClothes" min="0" max="200" value="100"><span id="volClothesOut">100%</span></div>
+<div class="row"><span class="label">gear</span><input type="range" id="volClothes" min="0" max="200" value="100"><span id="volClothesOut">100%</span></div>
 <div class="row"><span class="label">ground</span><input type="range" id="volGround" min="0" max="200" value="100"><span id="volGroundOut">100%</span></div>
+<div class="row"><label><input type="checkbox" id="useMenu"> menu sfx</label></div>
 <div class="row"><button id="advClose">close</button></div>
 </div></div>
 <script>
@@ -77,7 +78,8 @@ const ANIM = {
   left:  { len3: 1.5, len1: 1.367, move: 0.089555547, bodyfall: 0.10122221, heavy: 0.43544441, land: [0.56977773, 0.61577773] },
   right: { len3: 1.5, len1: 1.367, move: 0.089555547, bodyfall: 0.10122221, heavy: 0.43544441, land: [0.56977773, 0.61577773] }
 };
-const SEQ_DELAY = 0.15;   // voice sequence container: scream, 150 ms delay, exhale
+const SEQ_DELAY = 0.15;
+const HUD = { player: ["UI death/ui_hud_player_dead_plr_01", -2], teammate: ["UI death/ui_hud_player_dead_tm_01", -2], enemy_player: null };   // voice sequence container: scream, 150 ms delay, exhale
 const state = {};
 function chips(id, values, initial, onPick) {
   const box = document.getElementById(id);
@@ -174,8 +176,9 @@ async function die(k) {
     for (const layer of EV.bodyfall[gr][actor]) list.push([a.bodyfall * len, ...pick(layer), "ground"]);
     for (const tl of a.land) for (const layer of EV.land[gr][actor]) list.push([tl * len, ...pick(layer), "ground"]);
   }
+  if (document.getElementById("useMenu").checked && HUD[actor]) list.push([0, ...HUD[actor], null]);
   const bufs = await Promise.all([...list.map(x => load(x[1])), load(exhale[0])]);
-  const gain = (db, cat) => Math.pow(10, db / 20) * level(cat);
+  const gain = (db, cat) => Math.pow(10, db / 20) * (cat ? level(cat) : 1);
   const parts = list.map((x, i) => ({ time: x[0], buf: bufs[i], gain: gain(x[2], x[3]) }));
   parts.push({ time: bufs[0].duration + SEQ_DELAY, buf: bufs[bufs.length - 1], gain: gain(exhale[1], "voice") });
   play(parts, ctx.currentTime + 0.05);
