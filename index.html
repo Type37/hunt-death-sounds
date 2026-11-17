@@ -68,11 +68,11 @@ const voice = {
 };
 const BF = "Bodyfall/";
 const grounds = {
-  wood:         [nums("bodyfall_wood", 6), "Play_c_global_fts_land_wood"],
   mud:          [nums("c_global_mfx_bodyfall_mud", 4), "Play_c_global_fts_land_mud"],
   soil:         [nums("c_global_mfx_bodyfall_soil", 5), "Play_c_global_fts_land_soil"],
   forest:       [nums("c_global_mfx_bodyfall_forest", 4), "c_global_mfx_land_forest"],
   grass:        [nums("bodyfall_vegetation", 4), "Play_c_global_fts_land_vegetation"],
+  wood:         [nums("bodyfall_wood", 6), "Play_c_global_fts_land_wood"],
   leaves:       [nums("c_global_mfx_bodyfall_leaves", 4), "c_global_mfx_land_leaves"],
   rock:         [nums("bodyfall_rock", 6), "Play_c_global_fts_land_rock"],
   "hollow metal": [nums("bodyfall_metal", 4), "c_global_mfx_land_metal_hollow"],
@@ -80,8 +80,8 @@ const grounds = {
   "solid metal": [nums("bodyfall_metal_thick", 4), "footstep_land_metal_thick"],
   gravel:       [nums("c_global_mfx_bodyfall_gravel", 6), "Play_c_global_fts_land_gravel"],
   water:        [nums("bodyfall_water", 6), "Play_c_global_fts_land_water"],
-  glass:        [nums("c_global_mfx_bodyfall_glass", 4), "Play_c_global_fts_land_glass"],
   flesh:        [nums("c_global_mfx_bodyfall_flesh", 4), "Play_c_global_fts_land_mud"],
+  glass:        [nums("c_global_mfx_bodyfall_glass", 4), "Play_c_global_fts_land_glass"],
   cocoon:       [nums("c_global_mfx_bodyfall_cocoon", 4), "c_global_mfx_land_cocoon"]
 };
 const CLIP = 1.5;
@@ -107,7 +107,7 @@ function chips(id, values, initial) {
 const short = n => String(Number(n.slice(-2)));
 const gsel = document.getElementById("ground");
 for (const g of ["random", ...Object.keys(grounds)]) gsel.add(new Option(g, g));
-gsel.value = "wood"; state.ground = "wood";
+gsel.value = "soil"; state.ground = "soil";
 gsel.onchange = () => { state.ground = gsel.value; };
 chips("rustle", ["light", "medium", "heavy"], "light");
 chips("screamM", voice.m.scream.map(short), "random");
