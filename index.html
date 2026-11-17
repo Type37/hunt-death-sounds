@@ -151,6 +151,50 @@ function falloff(attId, d) {
 const level = cat => Number(document.getElementById(vol[cat]).value) / 100;
 const choose = (id, all) => state[id] === "random" ? pick(all) : state[id];
 
+
+// hover tips (plain words, numbers from the game data)
+const TIPS = {
+  m: "Male hunter death.",
+  f: "Female hunter death.",
+  "actor:you": "Your own death. Gear is 3 dB louder and boots are -12 dB. No distance fade. The female voice always ends on exhale 4.",
+  "actor:teammate": "A teammate dies. Gear -15 to -17 dB, boots -15 dB. Fades with distance.",
+  "actor:enemy": "An enemy dies. Same sounds as a teammate. Fades with distance.",
+  useGround: "The body hitting the floor (+3 dB) and two landing thumps (-20 dB), plus boots (-15 dB, -12 dB for you).",
+  useClothes: "The hunter's kit rattling as they fall (-20 to -38 dB), then a heavier gear hit (-15 to -17 dB).",
+  "speed:sneak": "How fast they were moving when they died. Sneak is the quietest rattle (loudest part -23 dB).",
+  "speed:walk": "How fast they were moving when they died. Walk: loudest part -20 dB.",
+  "speed:run": "How fast they were moving when they died. Run is the loudest rattle (loudest part -17 dB).",
+  "ground:water": "Water: no boot sound. Your own death adds a splash (-26 dB).",
+  "ground:more…": "All ground types.",
+  random: "Picks one at random each time.",
+  download: "Saves the last death as a WAV file.",
+  advBtn: "More options.",
+  "dir:front": "Which way the body falls. Front, left and right: heavy gear hit at 0.65 s.",
+  "dir:left": "Which way the body falls. Front, left and right: heavy gear hit at 0.65 s.",
+  "dir:right": "Which way the body falls. Front, left and right: heavy gear hit at 0.65 s.",
+  "dir:back": "Which way the body falls. Back: landing thumps come sooner, heavy gear hit later (1.11 s).",
+  dist: "How far you are from the body. The voice fades slower than the rest. Gear goes silent past 20 m. Your own death is always 0 m.",
+  volVoice: "100% is the game's mix: scream 0 dB, exhale -9 dB (-6 dB female).",
+  volClothes: "100% is the game's mix.",
+  volGround: "100% is the game's mix.",
+  useMenu: "The HUD sound: YOU DIED for you, TEAMMATE DIED for a teammate, nothing for an enemy (-2 dB).",
+  headshot: "No scream. In the game a headshot only cuts the voice off."
+};
+function applyTips() {
+  for (const [k, t] of Object.entries(TIPS)) {
+    if (k.includes(":")) {
+      const [box, val] = k.split(":");
+      const sel = box === "ground" ? "#ground button, #groundMore button" : "#" + box + " button";
+      document.querySelectorAll(sel).forEach(b => { if (b.textContent === val) b.title = t; });
+    } else if (k === "random") {
+      document.querySelectorAll(".chips button").forEach(b => { if (b.textContent === "random") b.title = t; });
+    } else {
+      const el = document.getElementById(k); if (!el) continue;
+      (el.closest("label") || el).title = t; el.title = t;
+    }
+  }
+}
+applyTips();
 const ctx = new AudioContext();
 const cache = {};
 const load = path => cache[path] ??= fetch(encodeURI(path) + ".wav").then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b));
